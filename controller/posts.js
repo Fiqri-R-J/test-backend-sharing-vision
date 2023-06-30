@@ -3,47 +3,29 @@ const models = require("../models/index");
 //get Data
 exports.getPost = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { pages, limit } = req.query;
+    const { page, limit } = req.query;
 
-    if (id) {
-      const postById = await models.posts.findByPk(id);
-      if (postById) {
-        res.status(200).json({
-          status: "ok",
-          messages: "data found",
-          data: postById,
-        });
-      } else {
-        res.status(400).json({
-          status: "not found",
-          messages: "Data not found",
-          data: null,
-        });
-      }
+    if (page && limit) {
+      allPosts = await models.post.query(`SELECT * FROM post ORDER BY id 
+      LIMIT ${limit} OFFSET ${limit * (page - 1)} `);
+      console.log(allPosts);
     } else {
-      let allPosts;
+      allPosts = await models.posts.findAll({});
+    }
 
-      if (limit && pages) {
-        allPosts = await models.posts.findAll({ limit: limit, offset: pages });
-      } else {
-        allPosts = await models.posts.findAll({});
-      }
-
-      if (allPosts.length !== 0) {
-        res.status(200).json({
-          status: "ok",
-          messages: "Data berhasil diambil",
-          total: allPosts.length,
-          data: allPosts,
-        });
-      } else {
-        res.status(204).json({
-          status: "ok",
-          message: "Data tidak ada",
-          data: {},
-        });
-      }
+    if (allPosts.length !== 0) {
+      res.status(200).json({
+        status: "ok",
+        messages: "Data berhasil diambil",
+        total: allPosts.length,
+        data: allPosts,
+      });
+    } else {
+      res.status(204).json({
+        status: "ok",
+        message: "Data tidak ada",
+        data: {},
+      });
     }
   } catch (error) {
     res.status(500).json({
@@ -51,6 +33,30 @@ exports.getPost = async (req, res) => {
       message: "Internal Server Error",
     });
     console.log(error);
+  }
+};
+exports.getPostId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const postById = await models.posts.findByPk(id);
+    if (postById) {
+      res.status(200).json({
+        status: "ok",
+        messages: "data found",
+        data: postById,
+      });
+    } else {
+      res.status(400).json({
+        status: "not found",
+        messages: "Data not found",
+        data: null,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -84,17 +90,15 @@ exports.createPost = async (req, res) => {
 exports.editPost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, category, status } = req.body;
+    const data = {
+      title: req.body.title,
+      content: req.body.content,
+      category: req.body.category,
+      status: req.body.status,
+    };
+    console.log(data);
 
-    const post = models.posts.update(
-      {
-        title,
-        content,
-        category,
-        status,
-      },
-      { where: { id: id } }
-    );
+    const post = models.posts.update(data, { where: { id: id } });
     if (post) {
       res.status(200).json({
         status: "ok",
